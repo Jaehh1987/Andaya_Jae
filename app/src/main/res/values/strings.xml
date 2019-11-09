@@ -1,0 +1,22 @@
+<resources>
+
+    <string name="app_name">Andaya_Jae</string>
+
+    <string name="tvEnterUserID">User ID</string>
+    <string name="tvEnterSystolic">Systolic Reading</string>
+    <string name="tvEnterDiastolic">Diastolic Reading</string>
+    <string name="btnEnterDate">Select Date</string>
+    <string name="btnEnterTime">Select Time</string>
+    <string name="tvEnterCondition">Condition</string>
+    <string name="btnEnterSubmit">Submit</string>
+
+    <string name="tvListUserID">User ID:</string>
+    <string name="tvListDateTime">Date/Time:</string>
+    <string name="tvListSystolic">Systolic:</string>
+    <string name="tvListDiastolic">Diastolic:</string>
+    <string name="tvListCondition">Condition:</string>
+
+    <string name="btnUpdate">Update</string>
+    <string name="btnDelete">Delete</string>
+
+</resources>
