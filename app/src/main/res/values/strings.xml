@@ -18,5 +18,7 @@
 
     <string name="btnUpdate">Update</string>
     <string name="btnDelete">Delete</string>
+    <string name="tvSummaryTitle">Month-to-date average readings for this month</string>
+    <string name="tvSummaryCondition">Average Condition</string>
 
 </resources>

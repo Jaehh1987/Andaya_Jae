@@ -4,8 +4,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.AlertDialog;
-import android.app.DatePickerDialog;
-import android.app.TimePickerDialog;
+
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -34,6 +34,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -44,13 +45,10 @@ public class MainActivity extends AppCompatActivity {
     EditText etEnterSystolic;
     EditText etEnterDiastolic;
 
-    TextView tvEnterDate;
-    TextView tvEnterTime;
-
     ListView listViewReading;
+    ListView listViewSummary;
     List<Reading> readingList;
-
-    private int mYear, mMonth, mDay, mHour, mMinute;
+    List<Summary> summaryList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,14 +61,9 @@ public class MainActivity extends AppCompatActivity {
         etEnterSystolic = findViewById(R.id.etEnterSystolic);
         etEnterDiastolic = findViewById(R.id.etEnterDiastolic);
 
-        tvEnterDate = findViewById(R.id.tvEnterDate);
-        tvEnterTime = findViewById(R.id.tvEnterTime);
-
-        getCurrentDateTime();
-        setDateTime();
-
         listViewReading = findViewById(R.id.listViewReading);
         readingList = new ArrayList<Reading>();
+        summaryList = new ArrayList<Summary>();
 
         listViewReading.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
@@ -80,6 +73,8 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             }
         });
+
+        listViewSummary = findViewById(R.id.listViewSummary);
     }
 
     @Override
@@ -93,8 +88,14 @@ public class MainActivity extends AppCompatActivity {
                     Reading reading = readingSnapshot.getValue(Reading.class);
                     readingList.add(reading);
                 }
-                ReadingListAdapter adapter = new ReadingListAdapter(MainActivity.this, readingList);
-                listViewReading.setAdapter(adapter);
+
+                ReadingListAdapter readingAdapter = new ReadingListAdapter(MainActivity.this, readingList);
+                listViewReading.setAdapter(readingAdapter);
+
+                summaryList = generateSummary((ArrayList)readingList);
+
+                SummaryListAdapter summaryAdapter = new SummaryListAdapter(MainActivity.this, summaryList);
+                listViewSummary.setAdapter(summaryAdapter);
             }
 
             @Override
@@ -104,70 +105,40 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void getCurrentDateTime() {
-        Calendar calendar = Calendar.getInstance();
-        mYear = calendar.get(Calendar.YEAR);
-        mMonth = calendar.get(Calendar.MONTH);
-        mDay = calendar.get(Calendar.DAY_OF_MONTH);
-        mHour = calendar.get(Calendar.HOUR_OF_DAY);
-        mMinute = calendar.get(Calendar.MINUTE);
+    private Date getCurrentDateTime() {
+        return Calendar.getInstance().getTime();
     }
 
-    private void setDateTime() {
-        tvEnterDate.setText(mDay + "/" + (mMonth + 1) + "/" + mYear);
-        tvEnterTime.setText(mHour + ":" + mMinute);
-    }
-
-    public void selectDate(View view) {
-        DatePickerDialog datePickerDialog = new DatePickerDialog(this,
-                new DatePickerDialog.OnDateSetListener() {
-                    @Override
-                    public void onDateSet(DatePicker view, int year,
-                                          int monthOfYear, int dayOfMonth) {
-                        mYear = year;
-                        mMonth = monthOfYear;
-                        mDay = dayOfMonth;
-                        setDateTime();
-                    }
-                }, mYear, mMonth, mDay);
-        datePickerDialog.show();
-    }
-
-    public void selectTime(View view) {
-        TimePickerDialog timePickerDialog = new TimePickerDialog(this,
-                new TimePickerDialog.OnTimeSetListener() {
-                    @Override
-                    public void onTimeSet(TimePicker view, int hourOfDay,
-                                          int minute) {
-                        mHour = hourOfDay;
-                        mMinute = minute;
-                        setDateTime();
-                    }
-                }, mHour, mMinute, false);
-        timePickerDialog.show();
+    public void makeCrisisToast() {
+        Toast.makeText(this, "Consult your doctor immediately", Toast.LENGTH_LONG).show();
     }
 
     public void addReading(View view) throws ParseException {
 
         if (TextUtils.isEmpty(etEnterUserID.getText()) || TextUtils.isEmpty(etEnterSystolic.getText())
             || TextUtils.isEmpty(etEnterDiastolic.getText())) {
-            Toast.makeText(this, "You must enter valid informations", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "You must enter valid information", Toast.LENGTH_LONG).show();
             return;
         }
 
         String userID = etEnterUserID.getText().toString();
         Long systolic = Long.parseLong(etEnterSystolic.getText().toString());
         Long diastolic = Long.parseLong(etEnterDiastolic.getText().toString());
-        Date date = new SimpleDateFormat("dd/MM/yyyy hh:mm").parse(mDay + "/" + (mMonth+1) + "/" + mYear + " " + mHour + ":" + mMinute);
 
         String id = databaseReading.push().getKey();
-        Reading reading = new Reading(id, userID, date, systolic, diastolic);
+        final Reading reading = new Reading(id, userID, getCurrentDateTime(), systolic, diastolic);
 
-        Task setValueTask = databaseReading.child(id).setValue(reading);
+        final Task setValueTask = databaseReading.child(id).setValue(reading);
 
         setValueTask.addOnSuccessListener(new OnSuccessListener() {
             @Override
             public void onSuccess(Object o) {
+                if (reading.getColor() == Color.RED) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                    builder.setMessage("Consult your doctor immediately").setTitle("Hypertensive Crisis");
+                    AlertDialog alert = builder.create();
+                    alert.show();
+                }
                 Toast.makeText(MainActivity.this, "Reading is added", Toast.LENGTH_LONG).show();
                 etEnterUserID.setText("");
                 etEnterSystolic.setText("");
@@ -237,62 +208,6 @@ public class MainActivity extends AppCompatActivity {
         etUpdateSystolic.setText(reading.getSystolic().toString());
         etUpdateDiastolic.setText(reading.getDiastolic().toString());
 
-        final int[] uYear = new int[1];
-        final int[] uMonth = new int[1];
-        final int[] uDay = new int[1];
-        final int[] uHour = new int[1];
-        final int[] uMinute = new int[1];
-        uYear[0] = Integer.parseInt(new SimpleDateFormat("yyyy").format(reading.getDate()));
-        uMonth[0] = Integer.parseInt(new SimpleDateFormat("MM").format(reading.getDate())) - 1;
-        uDay[0] = Integer.parseInt(new SimpleDateFormat("dd").format(reading.getDate()));
-        uHour[0] = Integer.parseInt(new SimpleDateFormat("hh").format(reading.getDate()));
-        uMinute[0] = Integer.parseInt(new SimpleDateFormat("mm").format(reading.getDate()));
-
-        final TextView tvUpdateDate = dialogView.findViewById(R.id.tvUpdateDate);
-        final TextView tvUpdateTime = dialogView.findViewById(R.id.tvUpdateTime);
-
-        tvUpdateDate.setText(uDay[0] + "/" + (uMonth[0] + 1) + "/" + uYear[0]);
-        tvUpdateTime.setText(uHour[0] + ":" + uMinute[0]);
-
-        Button btnUpdateDate = dialogView.findViewById(R.id.btnUpdateDate);
-        Button btnUpdateTime = dialogView.findViewById(R.id.btnUpdateTime);
-
-        btnUpdateDate.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                DatePickerDialog datePickerDialog = new DatePickerDialog(MainActivity.this,
-                        new DatePickerDialog.OnDateSetListener() {
-                            @Override
-                            public void onDateSet(DatePicker view, int year,
-                                                  int monthOfYear, int dayOfMonth) {
-                                uYear[0] = year;
-                                uMonth[0] = monthOfYear;
-                                uDay[0] = dayOfMonth;
-                                int displayMonth = monthOfYear + 1;
-                                tvUpdateDate.setText(uDay[0] + "/" + displayMonth + "/" + uYear[0]);
-                            }
-                        }, uYear[0], uMonth[0], uDay[0]);
-                datePickerDialog.show();
-            }
-        });
-
-        btnUpdateTime.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                TimePickerDialog timePickerDialog = new TimePickerDialog(MainActivity.this,
-                        new TimePickerDialog.OnTimeSetListener() {
-                            @Override
-                            public void onTimeSet(TimePicker view, int hourOfDay,
-                                                  int minute) {
-                                uHour[0] = hourOfDay;
-                                uMinute[0] = minute;
-                                tvUpdateTime.setText(uHour[0] + ":" + uMinute[0]);
-                            }
-                        }, uHour[0], uMinute[0], false);
-                timePickerDialog.show();
-            }
-        });
-
         Button btnUpdate = dialogView.findViewById(R.id.btnUpdate);
         Button btnDelete = dialogView.findViewById(R.id.btnDelete);
 
@@ -307,15 +222,8 @@ public class MainActivity extends AppCompatActivity {
                 String userID = etUpdateUserID.getText().toString().trim();
                 Long systolic = Long.parseLong(etUpdateSystolic.getText().toString());
                 Long diastolic = Long.parseLong(etUpdateDiastolic.getText().toString());
-                Date date = new Date();
-                try {
-                    date = new SimpleDateFormat("dd/MM/yyyy hh:mm")
-                            .parse(uDay[0] + "/" + uMonth[0] + "/" + uYear[0] + " " + uHour[0] + ":" + uMinute[0]);
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
 
-                Reading newReading = new Reading(reading.getId(), userID, date, systolic, diastolic);
+                Reading newReading = new Reading(reading.getId(), userID, reading.getDate(), systolic, diastolic);
                 updateReading(newReading);
 
                 alertDialog.dismiss();
@@ -329,5 +237,29 @@ public class MainActivity extends AppCompatActivity {
                 alertDialog.dismiss();
             }
         });
+    }
+
+    public ArrayList<Summary> generateSummary(ArrayList<Reading> readingList) {
+
+        ArrayList<Summary> summaryList = new ArrayList<>();
+        HashMap<String, ArrayList<Reading>> hashMap = new HashMap<>();
+
+        for (Reading reading : readingList) {
+            if (hashMap.containsKey(reading.getUserID())) {
+                ArrayList arrayList = hashMap.get(reading.getUserID());
+                arrayList.add(reading);
+                hashMap.put(reading.getUserID(), arrayList);
+            } else {
+                ArrayList arrayList = new ArrayList<Reading>();
+                arrayList.add(reading);
+                hashMap.put(reading.getUserID(), arrayList);
+            }
+        }
+
+        for (HashMap.Entry<String, ArrayList<Reading>> entry : hashMap.entrySet()) {
+            summaryList.add(new Summary(entry.getValue()));
+        }
+
+        return summaryList;
     }
 }

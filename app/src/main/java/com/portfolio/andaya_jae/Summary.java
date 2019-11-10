@@ -1,33 +1,36 @@
 package com.portfolio.andaya_jae;
 
-import android.app.Application;
 import android.graphics.Color;
-import android.view.View;
-import android.widget.Toast;
 
-import java.util.Date;
+import java.util.ArrayList;
 
-import static java.security.AccessController.getContext;
+public class Summary {
 
-public class Reading {
-
-    private String id;
+    private ArrayList<Reading> readingList;
     private String userID;
-    private Date date;
     private Long systolic;
     private Long diastolic;
     private String condition;
     private int color;
 
-    public Reading() {};
+    public Summary() {};
 
-    public Reading (String id, String userID, Date date, Long systolic, Long diastolic) {
-        this.id = id;
-        this.userID = userID;
-        this.date = date;
-        this.systolic = systolic;
-        this.diastolic = diastolic;
-        this.condition = setCondition(systolic, diastolic);
+    public Summary(ArrayList<Reading> readingList) {
+        this.readingList = readingList;
+        systolic = Long.valueOf(0);
+        diastolic = Long.valueOf(0);
+        generateInfo();
+    }
+
+    public void generateInfo() {
+        this.userID = readingList.get(0).getUserID();
+        for (Reading reading : readingList) {
+            systolic += reading.getSystolic();
+            diastolic += reading.getDiastolic();
+        }
+        systolic /= readingList.size();
+        diastolic /= readingList.size();
+        condition = setCondition(systolic, diastolic);
     }
 
     private String setCondition(Long systolic, Long diastolic) {
@@ -49,16 +52,8 @@ public class Reading {
         }
     }
 
-    public String getId() {
-        return id;
-    }
-
     public String getUserID() {
         return userID;
-    }
-
-    public Date getDate() {
-        return date;
     }
 
     public Long getDiastolic() {
@@ -75,16 +70,8 @@ public class Reading {
 
     public int getColor() { return color; }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
     public void setUserID(String userID) {
         this.userID = userID;
-    }
-
-    public void setDate(Date date) {
-        this.date = date;
     }
 
     public void setDiastolic(Long diastolic) {

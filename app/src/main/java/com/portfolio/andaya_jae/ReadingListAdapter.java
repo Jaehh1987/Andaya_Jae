@@ -51,6 +51,7 @@ public class ReadingListAdapter extends ArrayAdapter<Reading> {
         tvListSystolicValue.setText(String.valueOf(reading.getSystolic()));
         tvListDiastolicIDValue.setText(String.valueOf(reading.getDiastolic()));
         tvListConditionValue.setText(reading.getCondition());
+        listViewItem.setBackgroundColor(reading.getColor());
 
         return listViewItem;
     }
